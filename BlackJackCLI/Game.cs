@@ -6,8 +6,8 @@ public class BlackjackGame
     private Deck _deck;
     private List<Player> _players;
     private Player _dealer;
+    private int DealerPenaltyPoints = 0;
 
-    //constructor
     public BlackjackGame()
     {
         _deck = new Deck();
@@ -23,11 +23,11 @@ public class BlackjackGame
         int numberOfPlayers = GetNumberOfPlayers();
         AddPlayers(numberOfPlayers);
 
+        CollectBets();
         DealInitialCards();
         Play();
     }
 
-    // aantal spelers vragen
     private int GetNumberOfPlayers()
     {
         int numberOfPlayers;
@@ -47,7 +47,6 @@ public class BlackjackGame
         }
     }
 
-    // spelers toevoegen aan array
     private void AddPlayers(int numberOfPlayers)
     {
         for (int i = 1; i <= numberOfPlayers; i++)
@@ -80,7 +79,6 @@ public class BlackjackGame
         ShowHands();
     }
 
-    // print handen van dealer en spelers
     public void ShowHands()
     {
         Console.Clear();
@@ -92,14 +90,13 @@ public class BlackjackGame
         {
             Console.WriteLine("\n-- " + player.Name + "'s Hand --");
             Console.WriteLine(player.ShowHand());
+            Console.WriteLine($"Balance: ${player.Money}");
             Console.WriteLine("-- " + player.Name + "'s Hand --");
         }
     }
 
-    // main game loop
     public void Play()
     {
-        // check voor blackjacks bij eerste 2 kaarten
         BlackjackCheck();
 
         foreach (var player in _players)
@@ -107,7 +104,6 @@ public class BlackjackGame
             Console.WriteLine($"\n{player.Name}'s turn:");
             PlayerTurn(player);
 
-            // busted en blackjack check
             if (player.HasBlackjack())
             {
                 Console.WriteLine($"{player.Name} has Blackjack");
@@ -124,18 +120,47 @@ public class BlackjackGame
         DealerTurn();
         Console.Clear();
 
-        //handen van spelers laten zien
         ShowHands();
-
-        // winaars bekent maken
         EvaluateWinner();
 
-        // spell restarten
+        Console.WriteLine($"\nDealer has {DealerPenaltyPoints} penalty point(s).");
+
         ResetGame();
     }
 
+    private void CollectBets()
+    {
+        Console.Clear();
+        Console.WriteLine("Dealer, collect bets from all players.\n");
 
-    // speler hit of pass
+        foreach (var player in _players)
+        {
+            if (player.Money <= 0)
+            {
+                Console.WriteLine($"{player.Name} is broke and can't bet.");
+                continue;
+            }
+
+            Console.WriteLine($"{player.Name}, you have ${player.Money}. Enter your bet:");
+            int bet;
+
+            while (true)
+            {
+                string input = Console.ReadLine();
+                if (int.TryParse(input, out bet) && bet > 0 && bet <= player.Money)
+                {
+                    player.CurrentBet = bet;
+                    player.Money -= bet;
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid bet. Try again.");
+                }
+            }
+        }
+    }
+
     private void PlayerTurn(Player player)
     {
         string action;
@@ -149,40 +174,64 @@ public class BlackjackGame
             }
             else if (action == "hit")
             {
-                player.AddCard(_deck.DealCard());
-                ShowHands();
+                if (AskForConfirmation($"Dealer, give {player.Name} a card?"))
+                {
+                    player.AddCard(_deck.DealCard());
+                    ShowHands();
+
+                    if (player.IsBusted())
+                    {
+                        DealerPenaltyPoints++;
+                        Console.WriteLine($"Dealer penalty! {player.Name} busted. Total penalties: {DealerPenaltyPoints}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Dealer denied the hit. Skipping player’s turn.");
+                    break;
+                }
             }
         }
     }
 
-    // dealer hit tot 17 anders pass
     private void DealerTurn()
     {
         while (_dealer.CalculateHandValue() < 17)
         {
-            Console.WriteLine("\nDealer hits");
-            _dealer.AddCard(_deck.DealCard());
-            ShowHands();
+            if (AskForConfirmation("Dealer, draw a card?"))
+            {
+                Console.WriteLine("\nDealer hits");
+                _dealer.AddCard(_deck.DealCard());
+                ShowHands();
+
+                if (_dealer.IsBusted())
+                {
+                    DealerPenaltyPoints++;
+                    Console.WriteLine($"Dealer busted! Penalty point given. Total penalties: {DealerPenaltyPoints}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Dealer passed on drawing a card.");
+                break;
+            }
         }
 
-        if (_dealer.IsBusted())
-        {
-            Console.WriteLine("\nDealer busted, all players not busted win");
-        }
-        else
+        if (!_dealer.IsBusted())
         {
             Console.WriteLine("Dealer passes \n");
         }
     }
 
-    // game restart
     private void ResetGame()
     {
         _deck = new Deck();
         foreach (var player in _players)
         {
             player.Hand.Clear();
+            player.CurrentBet = 0;
         }
+
         _dealer.Hand.Clear();
         _players.Clear();
 
@@ -195,7 +244,6 @@ public class BlackjackGame
         StartGame();
     }
 
-    // dealer permissie vragen
     private bool AskForConfirmation(string message)
     {
         string response;
@@ -221,7 +269,6 @@ public class BlackjackGame
         }
     }
 
-    // check voor blackjacks bij eerste 2 kaarten
     public void BlackjackCheck()
     {
         if (_dealer.HasBlackjack())
@@ -256,19 +303,34 @@ public class BlackjackGame
         }
     }
 
-
-    // winnaars bekent maken
     private void EvaluateWinner()
     {
+        // Prompt for confirmation before showing results
+        if (!AskForConfirmation("Dealer, do you want to show the results?"))
+        {
+            Console.WriteLine("Dealer declined to show results.");
+            return;
+        }
+
+        Console.Clear(); // Clear the console before showing the results
+
         if (_dealer.IsBusted())
         {
-            Console.WriteLine("\nDealer bustesd, players who did not bust win");
+            Console.WriteLine("\nDealer busted! Players who didn’t bust win:");
             foreach (var player in _players)
             {
                 if (!player.IsBusted())
                 {
-                    Console.WriteLine($"{player.Name} wins");
+                    int winnings = player.CurrentBet * 2;
+                    Console.WriteLine($"{player.Name} wins and earns ${winnings}!");
+                    player.Money += winnings;
                 }
+                else
+                {
+                    Console.WriteLine($"{player.Name} busted and lost ${player.CurrentBet}.");
+                }
+
+                player.CurrentBet = 0;
             }
             return;
         }
@@ -277,20 +339,32 @@ public class BlackjackGame
         {
             if (player.IsBusted())
             {
-                Console.WriteLine($"{player.Name} busted");
-            }
-            else if (player.CalculateHandValue() > _dealer.CalculateHandValue())
-            {
-                Console.WriteLine($"{player.Name} wins");
-            }
-            else if (player.CalculateHandValue() < _dealer.CalculateHandValue())
-            {
-                Console.WriteLine($"{player.Name} loses");
+                Console.WriteLine($"{player.Name} busted and lost ${player.CurrentBet}.");
             }
             else
             {
-                Console.WriteLine($"{player.Name} tie with dealer");
+                int playerValue = player.CalculateHandValue();
+                int dealerValue = _dealer.CalculateHandValue();
+
+                if (playerValue > dealerValue)
+                {
+                    int winnings = player.CurrentBet * 2;
+                    Console.WriteLine($"{player.Name} wins and earns ${winnings}!");
+                    player.Money += winnings;
+                }
+                else if (playerValue < dealerValue)
+                {
+                    Console.WriteLine($"{player.Name} loses their bet of ${player.CurrentBet}.");
+                }
+                else
+                {
+                    Console.WriteLine($"{player.Name} ties with dealer. Gets back ${player.CurrentBet}.");
+                    player.Money += player.CurrentBet;
+                }
             }
+
+            player.CurrentBet = 0;
         }
     }
+
 }

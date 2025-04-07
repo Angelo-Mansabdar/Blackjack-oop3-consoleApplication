@@ -6,6 +6,39 @@ public class Player
     public string Name { get; set; }
     public List<Card> Hand { get; set; }
 
+    // 💰 New fields for betting
+    public int Money { get; set; }
+    public int CurrentBet { get; set; }
+
+    // 🏗️ Constructor initializes hand and starting money
+    public Player(string name)
+    {
+        Name = name;
+        Hand = new List<Card>();
+        Money = 1000;         // starting cash
+        CurrentBet = 0;
+    }
+
+    public void AddCard(Card card)
+    {
+        Hand.Add(card);
+    }
+
+    public string ChooseAction()
+    {
+        string action;
+        Console.WriteLine($"{Name}, Choose hit or pass");
+        action = Console.ReadLine().ToLower();
+
+        while (action != "hit" && action != "pass")
+        {
+            Console.WriteLine("try again");
+            action = Console.ReadLine().ToLower();
+        }
+
+        return action;
+    }
+
     public bool HasBlackjack()
     {
         return Hand.Count == 2 && CalculateHandValue() == 21;
@@ -52,32 +85,5 @@ public class Player
 
         // haalt laatste , weg
         return handString.TrimEnd(',', ' ');
-    }
-
-    //constructor voor naam en lege hand
-    public Player(string name)
-    {
-        Name = name;
-        Hand = new List<Card>();
-    }
-
-    public void AddCard(Card card)
-    {
-        Hand.Add(card);
-    }
-
-    public string ChooseAction()
-    {
-        string action;
-        Console.WriteLine($"{Name}, Choose hit or pass");
-        action = Console.ReadLine().ToLower();
-
-        while (action != "hit" && action != "pass")
-        {
-            Console.WriteLine("try again");
-            action = Console.ReadLine().ToLower();
-        }
-
-        return action;
     }
 }
