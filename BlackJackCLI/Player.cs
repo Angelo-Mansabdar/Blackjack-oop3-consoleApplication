@@ -27,12 +27,12 @@ public class Player
     public string ChooseAction()
     {
         string action;
-        Console.WriteLine($"{Name}, Choose hit or pass");
+        Console.WriteLine($"{Name}, Choose hit, pass, or double down");
         action = Console.ReadLine().ToLower();
 
-        while (action != "hit" && action != "pass")
+        while (action != "hit" && action != "pass" && action != "double down")
         {
-            Console.WriteLine("try again");
+            Console.WriteLine("Invalid action. Please choose 'hit', 'pass', or 'double down'.");
             action = Console.ReadLine().ToLower();
         }
 
@@ -54,7 +54,7 @@ public class Player
         int totalValue = 0;
         int aceCount = 0;
 
-        // sum van kaart values
+        // sum of card values
         foreach (var card in Hand)
         {
             totalValue += card.Value;
@@ -62,7 +62,7 @@ public class Player
                 aceCount++;
         }
 
-        // ace 1 of 10 check
+        // ace 1 or 10 check
         while (totalValue > 21 && aceCount > 0)
         {
             totalValue -= 10;
@@ -83,7 +83,23 @@ public class Player
         int handValue = CalculateHandValue();
         handString += $" Score: {handValue}";
 
-        // haalt laatste , weg
+        // Remove the last comma
         return handString.TrimEnd(',', ' ');
+    }
+
+    // Double Down: doubles the bet, and player can only take one more card
+    public bool DoubleDown()
+    {
+        if (Money >= CurrentBet)
+        {
+            CurrentBet *= 2; // Double the bet
+            Console.WriteLine($"{Name} doubles down and the new bet is ${CurrentBet}.");
+            return true; // Player can now only take one card
+        }
+        else
+        {
+            Console.WriteLine($"{Name} doesn't have enough money to double down.");
+            return false; // Not enough money
+        }
     }
 }

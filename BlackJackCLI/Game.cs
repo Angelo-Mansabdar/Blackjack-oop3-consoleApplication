@@ -161,12 +161,12 @@ public class BlackjackGame
         }
     }
 
-    private void PlayerTurn(Player player)
+    private void PlayerTurn(Player currentPlayer)
     {
         string action;
-        while (!player.IsBusted() && !player.HasBlackjack())
+        while (!currentPlayer.IsBusted() && !currentPlayer.HasBlackjack())
         {
-            action = player.ChooseAction();
+            action = currentPlayer.ChooseAction();
 
             if (action == "pass")
             {
@@ -174,15 +174,15 @@ public class BlackjackGame
             }
             else if (action == "hit")
             {
-                if (AskForConfirmation($"Dealer, give {player.Name} a card?"))
+                if (AskForConfirmation($"Dealer, give {currentPlayer.Name} a card?"))
                 {
-                    player.AddCard(_deck.DealCard());
+                    currentPlayer.AddCard(_deck.DealCard());
                     ShowHands();
 
-                    if (player.IsBusted())
+                    if (currentPlayer.IsBusted())
                     {
                         DealerPenaltyPoints++;
-                        Console.WriteLine($"Dealer penalty! {player.Name} busted. Total penalties: {DealerPenaltyPoints}");
+                        Console.WriteLine($"Dealer penalty! {currentPlayer.Name} busted. Total penalties: {DealerPenaltyPoints}");
                     }
                 }
                 else
@@ -191,8 +191,11 @@ public class BlackjackGame
                     break;
                 }
             }
+            // Removed the split logic
         }
     }
+
+
 
     private void DealerTurn()
     {
@@ -366,5 +369,6 @@ public class BlackjackGame
             player.CurrentBet = 0;
         }
     }
+
 
 }
